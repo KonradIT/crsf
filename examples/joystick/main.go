@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -39,9 +40,15 @@ func scaleToJoystick(value uint16, maxValue uint16) int {
 }
 
 func main() {
-	baudrate := 425000 // baudrate for the ELRS modules.
+	fmt.Println("ELRS to Joystick emulation")
 
-	instance := crsf.New("COM10", baudrate, 1*time.Second)
+	port := flag.String("p", "COM10", "serial port to use")
+	baudrate := flag.Int("hz", 425000, "baudrate, 425000 by default")
+	timeout := flag.Duration("t", 1*time.Second, "timeout to use")
+	verbose := flag.Bool("v", false, "Verbose output")
+	flag.Parse()
+
+	instance := crsf.New(*port, *baudrate, *timeout)
 	err := instance.Start()
 	if err != nil {
 		fmt.Println(err)
@@ -76,7 +83,9 @@ func main() {
 	instance.Parse(func(packet crsf.Packet) {
 		const maxValue uint16 = 1811 // On my RC this is the max value for any stick high read.
 
-		fmt.Printf("packet: %v\n", packet.Channels)
+		if *verbose {
+			fmt.Printf("packet: %v\n", packet.Channels)
+		}
 
 		joystick.Axis(vjoy.AxisX).Seti(scaleToJoystick(packet.Channels[3], maxValue))
 		joystick.Axis(vjoy.AxisY).Seti(scaleToJoystick(packet.Channels[2], maxValue))
