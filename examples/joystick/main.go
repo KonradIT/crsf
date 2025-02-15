@@ -10,6 +10,7 @@ import (
 
 	"github.com/artman41/vjoy"
 	"github.com/konradit/crsf"
+	packet "github.com/konradit/crsf/pkg/crsfpacket"
 )
 
 func getJoystick() *vjoy.Device {
@@ -80,7 +81,7 @@ func main() {
 		os.Exit(0)
 	}()
 
-	instance.Parse(func(packet crsf.Packet) {
+	instance.Parse(func(packet packet.Packet) {
 		const maxValue uint16 = 1811 // On my RC this is the max value for any stick high read.
 
 		if *verbose {

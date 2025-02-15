@@ -1,4 +1,4 @@
-package crsf
+package crsfpacket
 
 import (
 	"errors"
@@ -6,24 +6,38 @@ import (
 
 var ErrDataTooShort = errors.New("data too short")
 
-type CRSFHeader struct {
-	SyncByte    byte
-	FrameLength byte
-	Type        byte
+// first 4 are corresponding to throttle, yaw, pitch, roll.
+// packet: [987 984 1386 991 1792 992 992 1792 992 992 992 1044 0 0 1811 1811]
+// 0 => right stick left/right
+// 1 => right stick up/down
+// 2 => left stick up/down
+// 3 => left stick left/right
+
+// todo: ditch unused channels.
+type ChannelsMap [16]uint16
+
+type Packet struct {
+	Channels ChannelsMap `json:"channels"`
 }
 
-type CRSFFrame struct {
-	Header  CRSFHeader
-	Payload []byte
-	CRC     byte
+type Header struct {
+	SyncByte    byte `json:"sync_byte"`
+	FrameLength byte `json:"frame_length"`
+	Type        byte `json:"type"`
 }
 
-func parseCRSFHeader(data []byte) (CRSFHeader, error) {
+type Frame struct {
+	Header  Header `json:"header"`
+	Payload []byte `json:"payload"`
+	CRC     byte   `json:"crc"`
+}
+
+func parseHeader(data []byte) (Header, error) {
 	if len(data) < 3 {
-		return CRSFHeader{}, ErrDataTooShort
+		return Header{}, ErrDataTooShort
 	}
 
-	header := CRSFHeader{
+	header := Header{
 		SyncByte:    data[0],
 		FrameLength: data[1],
 		Type:        data[2],
@@ -32,35 +46,35 @@ func parseCRSFHeader(data []byte) (CRSFHeader, error) {
 	return header, nil
 }
 
-func parseCRSFFrame(data []byte) (CRSFFrame, error) {
+func ParseFrame(data []byte) (Frame, error) {
 	if len(data) < 4 {
-		return CRSFFrame{}, ErrDataTooShort
+		return Frame{}, ErrDataTooShort
 	}
 
-	header, err := parseCRSFHeader(data)
+	header, err := parseHeader(data)
 	if err != nil {
-		return CRSFFrame{}, err
+		return Frame{}, err
 	}
 
 	payloadStart := 3
 
 	payloadLength := int(header.FrameLength) - 2
 	if len(data) < payloadStart+payloadLength+1 {
-		return CRSFFrame{}, ErrDataTooShort
+		return Frame{}, ErrDataTooShort
 	}
 
 	payload := data[payloadStart : payloadStart+payloadLength]
 	crc := data[payloadStart+payloadLength]
 
-	return CRSFFrame{
+	return Frame{
 		Header:  header,
 		Payload: payload,
 		CRC:     crc,
 	}, nil
 }
 
-func unpackChannels(data []byte) channelsMap {
-	var channels channelsMap
+func UnpackChannels(data []byte) ChannelsMap {
+	var channels ChannelsMap
 	bitOffset := 0
 
 	for i := range 16 {

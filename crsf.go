@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	packet "github.com/konradit/crsf/pkg/crsfpacket"
 	"go.bug.st/serial"
 )
 
@@ -21,21 +22,7 @@ type CRSFParse struct {
 	serialConn serial.Port
 }
 
-// first 4 are corresponding to throttle, yaw, pitch, roll.
-// packet: [987 984 1386 991 1792 992 992 1792 992 992 992 1044 0 0 1811 1811]
-// 0 => right stick left/right
-// 1 => right stick up/down
-// 2 => left stick up/down
-// 3 => left stick left/right
-
-// todo: ditch unused channels.
-type channelsMap [16]uint16
-
-type Packet struct {
-	Channels channelsMap
-}
-
-type PacketCallback func(packet Packet)
+type PacketCallback func(packet packet.Packet)
 
 // New() creates a new Parser instance.
 // device: the serial device to connect to.
@@ -74,13 +61,9 @@ func (c *CRSFParse) Close() error {
 	return c.serialConn.Close()
 }
 
-const (
-	syncByte = 0xc8
-)
-
-func parsePacket(data []byte) *channelsMap {
+func parsePacket(data []byte) *packet.ChannelsMap {
 	for len(data) > 0 {
-		if data[0] == syncByte { // sync byte.
+		if data[0] == packet.SyncByte { // sync byte.
 			if len(data) < 22 {
 				return nil
 			}
@@ -97,12 +80,12 @@ func parsePacket(data []byte) *channelsMap {
 
 			stripped := data[:packetSize+4]
 
-			content, err := parseCRSFFrame(stripped)
+			content, err := packet.ParseFrame(stripped)
 			if err != nil {
 				return nil
 			}
 
-			channels := unpackChannels(content.Payload)
+			channels := packet.UnpackChannels(content.Payload)
 			return &channels
 		}
 		data = data[1:]
@@ -133,7 +116,7 @@ func (c *CRSFParse) Parse(callback PacketCallback) error {
 		channels := parsePacket(buf)
 
 		if channels != nil {
-			callback(Packet{Channels: *channels})
+			callback(packet.Packet{Channels: *channels})
 			buf = buf[:0]
 		}
 
