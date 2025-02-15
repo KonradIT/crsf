@@ -1,6 +1,10 @@
 package crsf
 
-import "fmt"
+import (
+	"errors"
+)
+
+var ErrDataTooShort = errors.New("data too short")
 
 type CRSFHeader struct {
 	SyncByte    byte
@@ -16,7 +20,7 @@ type CRSFFrame struct {
 
 func parseCRSFHeader(data []byte) (CRSFHeader, error) {
 	if len(data) < 3 {
-		return CRSFHeader{}, fmt.Errorf("data too short for header")
+		return CRSFHeader{}, ErrDataTooShort
 	}
 
 	header := CRSFHeader{
@@ -30,7 +34,7 @@ func parseCRSFHeader(data []byte) (CRSFHeader, error) {
 
 func parseCRSFFrame(data []byte) (CRSFFrame, error) {
 	if len(data) < 4 {
-		return CRSFFrame{}, fmt.Errorf("data too short for frame")
+		return CRSFFrame{}, ErrDataTooShort
 	}
 
 	header, err := parseCRSFHeader(data)
@@ -42,7 +46,7 @@ func parseCRSFFrame(data []byte) (CRSFFrame, error) {
 
 	payloadLength := int(header.FrameLength) - 2
 	if len(data) < payloadStart+payloadLength+1 {
-		return CRSFFrame{}, fmt.Errorf("data too short for payload")
+		return CRSFFrame{}, ErrDataTooShort
 	}
 
 	payload := data[payloadStart : payloadStart+payloadLength]
@@ -55,21 +59,28 @@ func parseCRSFFrame(data []byte) (CRSFFrame, error) {
 	}, nil
 }
 
-func unpackChannels(data []byte) []uint16 {
-	var channels []uint16
+func unpackChannels(data []byte) channelsMap {
+	var channels channelsMap
 	bitOffset := 0
 
-	for i := 0; i < 16; i++ {
-		// Calculate the byte and bit position
+	for i := range 16 {
+		// Calculate the byte position
 		byteIndex := bitOffset / 8
 		bitIndex := bitOffset % 8
 
-		// Extract 11 bits for each channel
-		value := uint16(data[byteIndex]) | uint16(data[byteIndex+1])<<8
-		value >>= bitIndex
-		value &= 0x7FF // Mask to 11 bits
+		// Read up to 3 bytes since an 11-bit value might span across them
+		value := uint32(data[byteIndex]) | uint32(data[byteIndex+1])<<8
+		if bitIndex > 5 { // If we need bits from the third byte
+			value |= uint32(data[byteIndex+2]) << 16
+		}
 
-		channels = append(channels, value)
+		// Bit shift right (prepend 0s to remove the bits read)
+		value >>= bitIndex
+
+		// 0 11111111111
+		value &= 0x7FF
+
+		channels[i] = uint16(value)
 		bitOffset += 11
 	}
 
