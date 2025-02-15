@@ -30,11 +30,12 @@ func getJoystick() *vjoy.Device {
 	return dev
 }
 
-func scaleToJoystick(value uint16, maxValue uint16) int32 {
+func scaleToJoystick(value uint16, maxValue uint16) int {
 	// Normalize to -1 to 1
 	normalized := (float64(value)/float64(maxValue))*2 - 1
 	// Scale to -0x4000..0x3fff (-16384 to 16383)
-	return int32(normalized * 16383)
+	// This is how vJoy interprets the values.
+	return int(normalized * 16383)
 }
 
 func main() {
@@ -61,7 +62,10 @@ func main() {
 		<-sigChan
 
 		// Kill CRSF parser:
-		instance.Close()
+		err := instance.Close()
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		// Kill joystick:
 		joystick.Relinquish()
@@ -70,14 +74,14 @@ func main() {
 	}()
 
 	instance.Parse(func(packet crsf.Packet) {
-		const maxValue uint16 = 1811
+		const maxValue uint16 = 1811 // On my RC this is the max value for any stick high read.
 
 		fmt.Printf("packet: %v\n", packet.Channels)
 
-		joystick.Axis(vjoy.AxisX).Seti(int(scaleToJoystick(packet.Channels[2], maxValue)))
-		joystick.Axis(vjoy.AxisY).Seti(int(scaleToJoystick(packet.Channels[3], maxValue)))
-		joystick.Axis(vjoy.AxisRX).Seti(int(scaleToJoystick(packet.Channels[1], maxValue)))
-		joystick.Axis(vjoy.AxisRY).Seti(int(scaleToJoystick(packet.Channels[0], maxValue)))
+		joystick.Axis(vjoy.AxisX).Seti(scaleToJoystick(packet.Channels[3], maxValue))
+		joystick.Axis(vjoy.AxisY).Seti(scaleToJoystick(packet.Channels[2], maxValue))
+		joystick.Axis(vjoy.AxisRX).Seti(scaleToJoystick(packet.Channels[0], maxValue))
+		joystick.Axis(vjoy.AxisRY).Seti(scaleToJoystick(packet.Channels[1], maxValue))
 
 		if packet.Channels[4] > 1500 {
 			joystick.Button(0).Set(true)
