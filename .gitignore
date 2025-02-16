@@ -1,1 +1,5 @@
 *.exe
+pkg/crsfpacket/*zsu_do_not_release*.go
+pkg/crsfpacket/*ukraine*.go
+pkg/crsfpacket/*milbeta*.go
+pkg/crsfpacket/*milelrs*.go
