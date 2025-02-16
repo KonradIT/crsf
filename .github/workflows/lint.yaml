@@ -23,5 +23,4 @@ jobs:
           version: latest
           args: --timeout=5m
           working-directory: .
-          skip-pkg-cache: true # skip package cache
-          skip-build-cache: true 
+          skip-cache: true 
