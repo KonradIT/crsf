@@ -1,3 +1,3 @@
-linter-settings:
+linters-settings:
   nestif:
-    min-complexity: 10
+    min-complexity: 5
