@@ -1,3 +1,25 @@
+linters:
+  enable:
+  - whitespace
+  - gosec
+  - gci
+  - gofmt
+  - goimports
+  - revive
+  - nilerr
+  - nestif
+  - goconst
+  - asasalint
+  - dupl
+  - durationcheck
+  - errname
+  - goconst
+  - godox
+  - gofumpt
+  - importas
+  - unconvert
+  - unparam
+
 issues:
   exclude-dirs-use-default: true
 
