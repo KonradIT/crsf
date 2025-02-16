@@ -1,3 +1,6 @@
+//go:build windows && usejoystick
+// +build windows,usejoystick
+
 package main
 
 import (
