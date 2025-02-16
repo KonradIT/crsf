@@ -9,12 +9,14 @@ import (
 	"go.bug.st/serial"
 )
 
-var ErrConnNotInitialized = errors.New("serial: conn not initialized")
-var ErrWhenReading = func(err error) error {
-	return fmt.Errorf("Parse: failed to read from serial: %w", err)
-}
+var (
+	ErrConnNotInitialized = errors.New("serial: conn not initialized")
+	ErrWhenReading        = func(err error) error {
+		return fmt.Errorf("Parse: failed to read from serial: %w", err)
+	}
+)
 
-type CRSFParse struct {
+type Parse struct {
 	Device   string
 	Baudrate int
 	Timeout  time.Duration
@@ -28,8 +30,8 @@ type PacketCallback func(packet packet.Packet)
 // device: the serial device to connect to.
 // baudrate: Use 425000 because that's the baudrate for the ELRS modules.
 // timeout: the timeout to use in duration (eg: 2*time.Second)
-func New(device string, baudrate int, timeout time.Duration) *CRSFParse {
-	return &CRSFParse{
+func New(device string, baudrate int, timeout time.Duration) *Parse {
+	return &Parse{
 		Device:   device,
 		Baudrate: baudrate,
 		Timeout:  timeout,
@@ -37,7 +39,7 @@ func New(device string, baudrate int, timeout time.Duration) *CRSFParse {
 }
 
 // Start() opens the serial connection and starts parsing the packets.
-func (c *CRSFParse) Start() error {
+func (c *Parse) Start() error {
 	mode := &serial.Mode{
 		BaudRate: c.Baudrate,
 	}
@@ -53,7 +55,7 @@ func (c *CRSFParse) Start() error {
 }
 
 // Close() closes the serial connection.
-func (c *CRSFParse) Close() error {
+func (c *Parse) Close() error {
 	if c.serialConn == nil {
 		return ErrConnNotInitialized
 	}
@@ -94,7 +96,7 @@ func parsePacket(data []byte) *packet.ChannelsMap {
 }
 
 // Parse() reads from serial connection, attempts to parse data and returns the channels in the callback function.
-func (c *CRSFParse) Parse(callback PacketCallback) error {
+func (c *Parse) Parse(callback PacketCallback) error {
 	if c.serialConn == nil {
 		return ErrConnNotInitialized
 	}

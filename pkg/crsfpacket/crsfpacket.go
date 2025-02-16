@@ -83,6 +83,7 @@ func UnpackChannels(data []byte) ChannelsMap {
 		bitIndex := bitOffset % 8
 
 		// Read up to 3 bytes since an 11-bit value might span across them
+		// Using uint32 because data is too large (11 bits), uint16 will be casted later.
 		value := uint32(data[byteIndex]) | uint32(data[byteIndex+1])<<8
 		if bitIndex > 5 { // If we need bits from the third byte
 			value |= uint32(data[byteIndex+2]) << 16
@@ -94,7 +95,7 @@ func UnpackChannels(data []byte) ChannelsMap {
 		// 0 11111111111
 		value &= 0x7FF
 
-		channels[i] = uint16(value)
+		channels[i] = uint16(value) //nolint:G115 // Max 2048 here. Not an issue.
 		bitOffset += 11
 	}
 
