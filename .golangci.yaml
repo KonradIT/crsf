@@ -1,3 +1,6 @@
+issues:
+  exclude-dirs-use-default: true
+
 linters-settings:
   nestif:
     min-complexity: 5
