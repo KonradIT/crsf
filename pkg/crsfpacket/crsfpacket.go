@@ -21,9 +21,9 @@ type Packet struct {
 }
 
 type Header struct {
-	SyncByte    byte `json:"sync_byte"`
-	FrameLength byte `json:"frame_length"`
-	Type        byte `json:"type"`
+	SyncByte    byte       `json:"sync_byte"`
+	FrameLength byte       `json:"frame_length"`
+	Type        PacketType `json:"type"`
 }
 
 type Frame struct {
@@ -40,7 +40,7 @@ func parseHeader(data []byte) (Header, error) {
 	header := Header{
 		SyncByte:    data[0],
 		FrameLength: data[1],
-		Type:        data[2],
+		Type:        PacketType(data[2]),
 	}
 
 	return header, nil
@@ -98,6 +98,9 @@ func UnpackChannels(data []byte) ChannelsMap {
 		channels[i] = uint16(value) //nolint:G115 // Max 2048 here. Not an issue.
 		bitOffset += 11
 	}
+
+	// todo: get "armed status", at byte id 16, only compaible with ELRS.
+	// https://github.com/crsf-wg/crsf/wiki/CRSF_FRAMETYPE_RC_CHANNELS_PACKED
 
 	return channels
 }

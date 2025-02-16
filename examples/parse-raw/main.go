@@ -40,10 +40,10 @@ func main() {
 		}
 		// validate the size
 		packetSize := buf[1] - 2
-		packetType := buf[2]
+		packetType := packet.PacketType(buf[2])
 
-		expectedSize := byte(22)   // rc channels size.
-		expectedType := byte(0x16) // rc channels type.
+		expectedSize := byte(0x16)                 // rc channels size.
+		expectedType := packet.FrameChannelsPacked // rc channels type.
 
 		if packetSize != expectedSize || packetType != expectedType {
 			fmt.Println("Unexpected type or size.")
