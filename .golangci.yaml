@@ -1,0 +1,3 @@
+linter-settings:
+  nestif:
+    min-complexity: 10
